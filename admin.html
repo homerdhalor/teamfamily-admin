@@ -139,9 +139,6 @@
 const SUPABASE_URL = 'https://pfwevhwymygbnxfxrrgh.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_6_qGYW70gXNnG8MCVplc3g_xJ1RTcRG';
 
-// Mot de passe admin — pour changer : remplace la valeur de PASS_HASH
-// par le SHA-256 de ton nouveau mot de passe (utilise: https://emn178.github.io/online-tools/sha256.html)
-// Mot de passe actuel : TeamFamily2026
 const PASS_HASH = '54168c6113b2de057116e0a2772084a7db9349655e815e8d13990dbc3c9578d9';
 
 // ══ LOGIN ════════════════════════════════════════════════════════════════
@@ -238,10 +235,23 @@ async function loadDevices() {
             <td>@${s.pseudo}</td>
             <td style="font-size:11px;color:#607D9B">${s.device_id?.substring(0,16)}…</td>
             <td style="font-size:12px;color:#607D9B">${new Date(s.created_at).toLocaleDateString('fr-FR')}</td>
-            <td><button class="del-btn" onclick="deleteDevice(${s.id},'${s.pseudo}')" title="Réinitialiser l'appareil">🔄</button></td>
+            <td style="text-align:right">
+              <button class="del-btn" onclick="deleteDevice(${s.id},'${s.pseudo}')" title="Réinitialiser — autorise reconnexion sur autre téléphone">🔄</button>
+              <button class="del-btn" onclick="banUser('${s.pseudo}')" title="Bannir — supprime appareil ET retire de la whitelist">🚫</button>
+            </td>
           </tr>`).join('')}
       </tbody>
     </table>`;
+}
+
+async function banUser(pseudo) {
+  if (!confirm('Bannir @' + pseudo + ' ?\nSon appareil sera supprimé ET il sera retiré de la whitelist.')) return;
+  try {
+    await apiFetch('/rest/v1/sessions?pseudo=eq.' + pseudo, { method: 'DELETE' });
+    await apiFetch('/rest/v1/authorized?pseudo=eq.' + pseudo, { method: 'DELETE' });
+    toast('🚫 ' + pseudo + ' banni', 'ok');
+    loadAll();
+  } catch(e) { toast('❌ Erreur', 'err'); }
 }
 
 async function deleteDevice(id, pseudo) {
